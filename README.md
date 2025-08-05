@@ -33,6 +33,7 @@ Derek Neuharth, Sascha Brune, Thilo Wrona, Anne Glerum, Jean Braun, Xiaoping Yua
 
 
 We change some initial setting to fit our study.
+
 Note: The initial topography function of this part is under development, it is not used in this study. 
 
 
@@ -56,4 +57,5 @@ TODO:Notes in the plugin will be updated in the future.
 
         cmake -DFASTSCAPE_DIR=/path/to/fastscape/build -DDEAL_II_DIR=/path/to/dealii -DCMAKE_BUILD_TYPE=Release /path/to/aspect
         make
+
 

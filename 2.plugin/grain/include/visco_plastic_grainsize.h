@@ -21,7 +21,7 @@
 #ifndef _aspect_material_model_visco_plastic_grainsize_h
 #define _aspect_material_model_visco_plastic_grainsize_h
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/rheology/visco_plastic_grainsize.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/rheology/visco_plastic_grainsize.h>
 
 #include <aspect/simulator_access.h>
 #include <aspect/material_model/interface.h>

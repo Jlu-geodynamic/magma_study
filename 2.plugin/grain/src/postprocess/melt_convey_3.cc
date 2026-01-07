@@ -19,8 +19,8 @@
 */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/postprocess/melt_convey_3.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/postprocess/pre_melt_extraction.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/postprocess/melt_convey_3.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/postprocess/pre_melt_extraction.h>
 
 #include <aspect/geometry_model/interface.h>
 #include <aspect/geometry_model/box.h>
@@ -219,11 +219,12 @@ namespace aspect
 			fe_values[this->introspection().extractors.compositional_fields[sd1_id]].get_function_values (this->get_solution(),
                                 sd1_values);
 			double sd1_average = 0;
-	        const unsigned int sd2_id = this->introspection().compositional_index_for_name("sediment_2");
+			//20251231 停用sediment_2
+	        /* const unsigned int sd2_id = this->introspection().compositional_index_for_name("sediment_2");
 			std::vector<double> sd2_values(n_q_points);
 			fe_values[this->introspection().extractors.compositional_fields[sd2_id]].get_function_values (this->get_solution(),
                                 sd2_values); 
-			double sd2_average = 0;
+			double sd2_average = 0; */
 	        const unsigned int upper_id = this->introspection().compositional_index_for_name("upper");
 			std::vector<double> upper_values(n_q_points);
 			fe_values[this->introspection().extractors.compositional_fields[upper_id]].get_function_values (this->get_solution(),
@@ -279,7 +280,8 @@ namespace aspect
 			 for (unsigned int q = 0; q < n_q_points; q++)
 			{
 				sd1_average += std::max(0., sd1_values[q] * fe_values.JxW(q) / 1e6);
-				sd2_average += std::max(0., sd2_values[q] * fe_values.JxW(q) / 1e6);
+				//20251231 停用sediment_2
+				//sd2_average += std::max(0., sd2_values[q] * fe_values.JxW(q) / 1e6);
 				upper_average += std::max(0., upper_values[q] * fe_values.JxW(q) / 1e6);
 				lower_average += std::max(0., lower_values[q] * fe_values.JxW(q) / 1e6);
 				mantle_average += std::max(0., (mantle_upper_values[q] + mantle_middle_values[q] + mantle_lower_values[q]) * fe_values.JxW(q) / 1e6);
@@ -295,7 +297,8 @@ namespace aspect
 											 && lower_average / area_in_km < 0.02
 											 && mantle_average / area_in_km > 0.02
 											 && sd1_average / area_in_km < 0.02
-											 && sd2_average / area_in_km < 0.02
+											 //20251231 停用sediment_2
+											 //&& sd2_average / area_in_km < 0.02
 											 && target_mantle_melting_average / area_in_km > 0.02
 											 && target_mantle_melting_average / area_in_km < 0.5
 											 && target_crustal_melting_average / area_in_km < 0.02;

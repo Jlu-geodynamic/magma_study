@@ -19,9 +19,9 @@
 */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/geom/lithosphere_rift.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/comp/lithosphere_rift.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/temp/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/geom/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/comp/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/temp/lithosphere_rift.h>
 #include <aspect/geometry_model/box.h>
 #include <aspect/gravity_model/interface.h>
 #include <aspect/utilities.h>
@@ -63,7 +63,7 @@ namespace aspect
 	  const unsigned int id_mantle_middle = this->introspection().compositional_index_for_name("mantle_middle");
 	  const unsigned int id_mantle_lower = this->introspection().compositional_index_for_name("mantle_lower");
 	  
-	  
+	  //20251205 修改密度相关
 	  densities.push_back(temp_densities[0]);
 	  densities.push_back(temp_densities[id_upper+1]);
 	  densities.push_back(temp_densities[id_lower+1]);
@@ -86,25 +86,25 @@ namespace aspect
 	  heat_productivities.push_back(temp_heat_productivities[id_mantle_lower+1]);
 	  for(unsigned int a = 0; a < 5; ++a)
 	  {
-		  heat_productivities[a] /= densities[a];
+		  heat_productivities[a] /= densities[a+1];
 	  }		  
 													   
-	  conductivities.push_back(temp_thermal_diffusivities[id_upper+1] * densities[0] * temp_heat_capacities[id_upper+1]);
-	  conductivities.push_back(temp_thermal_diffusivities[id_lower+1] * densities[1] * temp_heat_capacities[id_lower+1]);
-	  conductivities.push_back(temp_thermal_diffusivities[id_mantle_upper+1] * densities[2] * temp_heat_capacities[id_mantle_upper+1]);
-	  conductivities.push_back(temp_thermal_diffusivities[id_mantle_middle+1] * densities[3] * temp_heat_capacities[id_mantle_middle+1]);
-	  conductivities.push_back(temp_thermal_diffusivities[id_mantle_lower+1] * densities[4] * temp_heat_capacities[id_mantle_lower+1]);
+	  conductivities.push_back(temp_thermal_diffusivities[id_upper+1] * densities[1] * temp_heat_capacities[id_upper+1]);
+	  conductivities.push_back(temp_thermal_diffusivities[id_lower+1] * densities[2] * temp_heat_capacities[id_lower+1]);
+	  conductivities.push_back(temp_thermal_diffusivities[id_mantle_upper+1] * densities[3] * temp_heat_capacities[id_mantle_upper+1]);
+	  conductivities.push_back(temp_thermal_diffusivities[id_mantle_middle+1] * densities[4] * temp_heat_capacities[id_mantle_middle+1]);
+	  conductivities.push_back(temp_thermal_diffusivities[id_mantle_lower+1] * densities[5] * temp_heat_capacities[id_mantle_lower+1]);
 	  
 	  std::vector<double> base_thickness_for_temp(3);
 	  std::vector<double> subduction_thickness_for_temp(3);
-	  for (unsigned int a = 0; a < 3; a++) 
+	  for (unsigned int a = 0; a < 3; ++a) 
 	  {
 		  if (a == 2)
 		  {
 			  base_thickness_for_temp[a] = thicknesses[2] + thicknesses[3] + thicknesses[4] == 0 ? 
-			                               1. : thicknesses[2] + thicknesses[3] + thicknesses[4];
+			                               1. : exclude_mantle_lower ? thicknesses[2] + thicknesses[3] : thicknesses[2] + thicknesses[3] + thicknesses[4];
 			  subduction_thickness_for_temp[a] = cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4] == 0 ?
-                                               	 1. : cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4];
+                                               	 1. : exclude_mantle_lower ? cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] : cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4];
 		  }
 		  else
 		  {
@@ -113,9 +113,9 @@ namespace aspect
 		  }
 	  }
 
-	  const double a_base = 0.5*densities[0]*heat_productivities[0]*base_thickness_for_temp[0] + 0.5*densities[1]*heat_productivities[1]*base_thickness_for_temp[1] + conductivities[0]/base_thickness_for_temp[0]*T0;
+	  const double a_base = 0.5*densities[1]*heat_productivities[0]*base_thickness_for_temp[0] + 0.5*densities[2]*heat_productivities[1]*base_thickness_for_temp[1] + conductivities[0]/base_thickness_for_temp[0]*T0;
       const double b_base = 1./(conductivities[0]/base_thickness_for_temp[0]+conductivities[1]/base_thickness_for_temp[1]);
-      const double c_base = 0.5*densities[1]*heat_productivities[1]*base_thickness_for_temp[1] + conductivities[2]/base_thickness_for_temp[2]*LAB_isotherm[0];
+      const double c_base = 0.5*densities[2]*heat_productivities[1]*base_thickness_for_temp[1] + conductivities[2]/base_thickness_for_temp[2]*LAB_isotherm[0];
       const double d_base = 1./(conductivities[1]/base_thickness_for_temp[1]+conductivities[2]/base_thickness_for_temp[2]);
 
       //Temperature at boundary between layer 1 and 2
@@ -124,13 +124,13 @@ namespace aspect
       const double T2_base = (c_base + conductivities[1]/base_thickness_for_temp[1]*T1_base) * d_base;
 	  
 	  //岩石圈分界面温度，按照线性增长计算
-	  const double T3_base = thicknesses[2] + thicknesses[3] + thicknesses[4] != 0 ? T2_base + (LAB_isotherm[0] - T2_base) * (thicknesses[2] / (thicknesses[2] + thicknesses[3] + thicknesses[4])) : LAB_isotherm[0];
-	  const double T4_base = thicknesses[3] + thicknesses[4] != 0 ? T3_base + (LAB_isotherm[0] - T3_base) * (thicknesses[3] / (thicknesses[3] + thicknesses[4])) : LAB_isotherm[0];
+	  //const double T3_base = thicknesses[2] + thicknesses[3] + thicknesses[4] != 0 ? T2_base + (LAB_isotherm[0] - T2_base) * (thicknesses[2] / (thicknesses[2] + thicknesses[3] + thicknesses[4])) : LAB_isotherm[0];
+	  //const double T4_base = thicknesses[3] + thicknesses[4] != 0 ? T3_base + (LAB_isotherm[0] - T3_base) * (thicknesses[3] / (thicknesses[3] + thicknesses[4])) : LAB_isotherm[0];
 	  
 	  
-      const double a_subduction = 0.5*densities[0]*heat_productivities[0]*subduction_thickness_for_temp[0] + 0.5*densities[1]*heat_productivities[1]*subduction_thickness_for_temp[1] + conductivities[0]/subduction_thickness_for_temp[0]*T0;
+      const double a_subduction = 0.5*densities[1]*heat_productivities[0]*subduction_thickness_for_temp[0] + 0.5*densities[2]*heat_productivities[1]*subduction_thickness_for_temp[1] + conductivities[0]/subduction_thickness_for_temp[0]*T0;
       const double b_subduction = 1./(conductivities[0]/subduction_thickness_for_temp[0]+conductivities[1]/subduction_thickness_for_temp[1]);
-      const double c_subduction = 0.5*densities[1]*heat_productivities[1]*subduction_thickness_for_temp[1] + conductivities[2]/subduction_thickness_for_temp[2]*LAB_isotherm[1];
+      const double c_subduction = 0.5*densities[2]*heat_productivities[1]*subduction_thickness_for_temp[1] + conductivities[2]/subduction_thickness_for_temp[2]*LAB_isotherm[1];
       const double d_subduction = 1./(conductivities[1]/subduction_thickness_for_temp[1]+conductivities[2]/subduction_thickness_for_temp[2]);
 
       //Temperature at boundary between layer 1 and 2
@@ -138,8 +138,8 @@ namespace aspect
       //Temperature at boundary between layer 2 and 3
       const double T2_subduction = (c_subduction + conductivities[1]/subduction_thickness_for_temp[1]*T1_subduction) * d_subduction;
 	  
-	  const double T3_subduction = cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4] != 0 ? T2_subduction + (LAB_isotherm[1] - T2_subduction) * (cratontic_layer_thicknesses[2] / (cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4])) : LAB_isotherm[1];
-	  const double T4_subduction = cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4] != 0 ? T3_subduction + (LAB_isotherm[1] - T3_subduction) * (cratontic_layer_thicknesses[3] / (cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4])) : LAB_isotherm[1];
+	  //const double T3_subduction = cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4] != 0 ? T2_subduction + (LAB_isotherm[1] - T2_subduction) * (cratontic_layer_thicknesses[2] / (cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4])) : LAB_isotherm[1];
+	  //const double T4_subduction = cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4] != 0 ? T3_subduction + (LAB_isotherm[1] - T3_subduction) * (cratontic_layer_thicknesses[3] / (cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4])) : LAB_isotherm[1];
 	  
 	  //20241122
 	  //计算交界面密度
@@ -174,18 +174,44 @@ namespace aspect
 				  temp_t = 0;
 				  temp_den = 0;
 			  }
-			  else
+			  //20251205 温度计算不变，密度计算按照各个相的密度确定
+			  /* else
 			  {
 				  temp_t = (LAB_isotherm[0]-T2_base)/base_thickness_for_temp[2] *(a-base_thickness_for_temp[0]-base_thickness_for_temp[1]) + T2_base;
 			      temp_den = densities[3] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
 			      test_G_base += temp_den * 100;
 				  temp_t = 0;
 				  temp_den = 0;
+			  } */
+			  else if (a > base_thickness_for_temp[0] + base_thickness_for_temp[1] && a <= base_thickness_for_temp[0] + base_thickness_for_temp[1] + thicknesses[2])
+			  {
+				  temp_t = (LAB_isotherm[0]-T2_base)/base_thickness_for_temp[2] *(a-base_thickness_for_temp[0]-base_thickness_for_temp[1]) + T2_base;
+			      temp_den = densities[3] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+				  test_G_base += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  else if (a > base_thickness_for_temp[0] + base_thickness_for_temp[1] + thicknesses[2] && a <= base_thickness_for_temp[0] + base_thickness_for_temp[1] + thicknesses[2] + thicknesses[3])
+			  {
+				  temp_t = (LAB_isotherm[0]-T2_base)/base_thickness_for_temp[2] *(a-base_thickness_for_temp[0]-base_thickness_for_temp[1]) + T2_base;
+			      temp_den = densities[4] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+				  test_G_base += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  //如果不计算下地幔，无法到达这一部分
+			  else
+			  {
+				  temp_t = (LAB_isotherm[0]-T2_base)/base_thickness_for_temp[2] *(a-base_thickness_for_temp[0]-base_thickness_for_temp[1]) + T2_base;
+			      temp_den = densities[5] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+				  test_G_base += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
 			  }
 		  }
 	  }
 	  
-	  for(unsigned int a = 1; a <= subduction_thickness_for_temp[0] + subduction_thickness_for_temp[1] + subduction_thickness_for_temp[2]; a++)
+	  for(unsigned int a = 1; a <= subduction_thickness_for_temp[0] + subduction_thickness_for_temp[1] + subduction_thickness_for_temp[2]; ++a)
 	  {
 		  //按照模型的顺序计算浮力
 		  //1.计算温度；2.计算密度；3.计算浮力
@@ -210,10 +236,35 @@ namespace aspect
 				  temp_t = 0;
 				  temp_den = 0;
 			  }
-			  else
+			  //20251205 温度计算不变，密度计算按照各个相的密度确定
+			  /* else
 			  {
 				  temp_t = (LAB_isotherm[1]-T2_subduction)/subduction_thickness_for_temp[2] *(a-subduction_thickness_for_temp[0]-subduction_thickness_for_temp[1]) + T2_subduction;
 			      temp_den = densities[3] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+			      test_G_2 += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  } */
+			  else if (a > subduction_thickness_for_temp[0] + subduction_thickness_for_temp[1] && a <= subduction_thickness_for_temp[0] + subduction_thickness_for_temp[1] + cratontic_layer_thicknesses[2])
+			  {
+				  temp_t = (LAB_isotherm[1]-T2_subduction)/subduction_thickness_for_temp[2] *(a-subduction_thickness_for_temp[0]-subduction_thickness_for_temp[1]) + T2_subduction;
+			      temp_den = densities[3] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+			      test_G_2 += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  else if (a > subduction_thickness_for_temp[0] + subduction_thickness_for_temp[1] + cratontic_layer_thicknesses[2] && a <= subduction_thickness_for_temp[0] + subduction_thickness_for_temp[1] + cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3])
+			  {
+				  temp_t = (LAB_isotherm[1]-T2_subduction)/subduction_thickness_for_temp[2] *(a-subduction_thickness_for_temp[0]-subduction_thickness_for_temp[1]) + T2_subduction;
+			      temp_den = densities[4] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+			      test_G_2 += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  else
+			  {
+				  temp_t = (LAB_isotherm[1]-T2_subduction)/subduction_thickness_for_temp[2] *(a-subduction_thickness_for_temp[0]-subduction_thickness_for_temp[1]) + T2_subduction;
+			      temp_den = densities[5] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
 			      test_G_2 += temp_den * 100;
 				  temp_t = 0;
 				  temp_den = 0;
@@ -222,30 +273,41 @@ namespace aspect
 	  }
 	  
 	  
-	  const double G_layer_base = 0.5 * 
-	                            ( densities[1] * (2 + (std::max(0., Tp - T0) + std::max(0., Tp - T1_base)) * thermal_expansivities[1]) * thicknesses[0] 
+	  /* const double G_layer_base = exclude_mantle_lower ? 
+	                        0.5 * ( densities[1] * (2 + (std::max(0., Tp - T0) + std::max(0., Tp - T1_base)) * thermal_expansivities[1]) * thicknesses[0] 
+	                            + densities[2] * (2 + (std::max(0., Tp - T1_base) + std::max(0., Tp - T2_base)) * thermal_expansivities[2]) * thicknesses[1] 
+								+ densities[3] * (2 + (std::max(0., Tp - T2_base) + std::max(0., Tp - T3_base)) * thermal_expansivities[3]) * thicknesses[2] 
+								+ densities[4] * (2 + (std::max(0., Tp - T3_base) + std::max(0., Tp - T4_base)) * thermal_expansivities[4]) * thicknesses[3] 
+						  : 0.5 * ( densities[1] * (2 + (std::max(0., Tp - T0) + std::max(0., Tp - T1_base)) * thermal_expansivities[1]) * thicknesses[0] 
 	                            + densities[2] * (2 + (std::max(0., Tp - T1_base) + std::max(0., Tp - T2_base)) * thermal_expansivities[2]) * thicknesses[1] 
 								+ densities[3] * (2 + (std::max(0., Tp - T2_base) + std::max(0., Tp - T3_base)) * thermal_expansivities[3]) * thicknesses[2] 
 								+ densities[4] * (2 + (std::max(0., Tp - T3_base) + std::max(0., Tp - T4_base)) * thermal_expansivities[4]) * thicknesses[3] 
 								+ densities[5] * (2 + std::max(0., Tp - T4_base) * thermal_expansivities[5]) * thicknesses[4]);
 	  
-	  const double G_layer_2 = 0.5 * 
-	                            ( densities[1] * (2 + (std::max(0., Tp - T0) + std::max(0., Tp - T1_subduction)) * thermal_expansivities[1]) * cratontic_layer_thicknesses[0] 
+	  const double G_layer_2 = exclude_mantle_lower ? 
+	                        0.5 * ( densities[1] * (2 + (std::max(0., Tp - T0) + std::max(0., Tp - T1_subduction)) * thermal_expansivities[1]) * cratontic_layer_thicknesses[0] 
 	                            + densities[2] * (2 + (std::max(0., Tp - T1_subduction) + std::max(0., Tp - T2_subduction)) * thermal_expansivities[2]) * cratontic_layer_thicknesses[1] 
 								+ densities[3] * (2 + (std::max(0., Tp - T2_subduction) + std::max(0., Tp - T3_subduction)) * thermal_expansivities[3]) * cratontic_layer_thicknesses[2] 
 								+ densities[4] * (2 + (std::max(0., Tp - T3_subduction) + std::max(0., Tp - T4_subduction)) * thermal_expansivities[4]) * cratontic_layer_thicknesses[3] 
-								+ densities[5] * (2 + std::max(0., Tp - T4_subduction) * thermal_expansivities[5]) * cratontic_layer_thicknesses[4]);
+						  : 0.5 * ( densities[1] * (2 + (std::max(0., Tp - T0) + std::max(0., Tp - T1_subduction)) * thermal_expansivities[1]) * cratontic_layer_thicknesses[0] 
+	                            + densities[2] * (2 + (std::max(0., Tp - T1_subduction) + std::max(0., Tp - T2_subduction)) * thermal_expansivities[2]) * cratontic_layer_thicknesses[1] 
+								+ densities[3] * (2 + (std::max(0., Tp - T2_subduction) + std::max(0., Tp - T3_subduction)) * thermal_expansivities[3]) * cratontic_layer_thicknesses[2] 
+								+ densities[4] * (2 + (std::max(0., Tp - T3_subduction) + std::max(0., Tp - T4_subduction)) * thermal_expansivities[4]) * cratontic_layer_thicknesses[3] 
+								+ densities[5] * (2 + std::max(0., Tp - T4_subduction) * thermal_expansivities[5]) * cratontic_layer_thicknesses[4]); */
 	  //h_base含义：Layer thicknesses结构的岩石圈如果泡在软流圈里，露出软流圈的高度
 	  h_base = 0;
       //h_base = (thicknesses[0] + thicknesses[1] + thicknesses[2] + thicknesses[3] + thicknesses[4]) - G_layer_base / densities[0];
-	  h_base = (thicknesses[0] + thicknesses[1] + thicknesses[2] + thicknesses[3] + thicknesses[4]) - test_G_base / densities[0];
+	  const double h_layer_1 = exclude_mantle_lower ? (thicknesses[0] + thicknesses[1] + thicknesses[2] + thicknesses[3]) - test_G_base / densities[0] : (thicknesses[0] + thicknesses[1] + thicknesses[2] + thicknesses[3] + thicknesses[4]) - test_G_base / densities[0];
 	  //const double h_layer_2 = (cratontic_layer_thicknesses[0] + cratontic_layer_thicknesses[1] + cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4]) - G_layer_2 / densities[0];
-	  const double h_layer_2 = (cratontic_layer_thicknesses[0] + cratontic_layer_thicknesses[1] + cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4]) - test_G_2 / densities[0];
+	  const double h_layer_2 = exclude_mantle_lower ? (cratontic_layer_thicknesses[0] + cratontic_layer_thicknesses[1] + cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3]) - test_G_2 / densities[0] : (cratontic_layer_thicknesses[0] + cratontic_layer_thicknesses[1] + cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4]) - test_G_2 / densities[0];
 	  //泡在软流圈里的高度相减，便是不同厚度岩石圈的高程差，此处假定Layer thicknesses结构的岩石圈高程为0
-	  const double delta_h = h_layer_2 - h_base;
+	  //20251225 取高地势为基准地势
+	  h_base = std::max(h_layer_1, h_layer_2);
+	  const double h_modify = std::min(h_layer_1, h_layer_2);
+	  const double delta_h = h_modify - h_base;
       
 	  this->get_pcout() << "   Base height: " << h_base << " m" << std::endl;
-      this->get_pcout() << "   Subduction plate height: " << h_layer_2 << " m" << std::endl;
+      this->get_pcout() << "   Subduction plate height: " << h_modify << " m" << std::endl;
 	  this->get_pcout() << "   Subduction plate initial topography of polygon: " << delta_h << " m" << std::endl;
     }
 
@@ -316,40 +378,96 @@ namespace aspect
 	  //评估高程时计算温度影响
 	  //计算温度时地幔物质归为一类
       std::vector<double> local_thickness_for_temp(3);
-	  for (unsigned int a = 0; a < 3; a++) 
+	  for (unsigned int a = 0; a < 3; a++)
 	  {
 		  if (a == 2)
 			  local_thickness_for_temp[a] = local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4] == 0 ? 
-			                               1. : local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4];
+			                               1. : exclude_mantle_lower ? local_thicknesses[2] + local_thicknesses[3] : local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4];
 		  else
 			  local_thickness_for_temp[a] = local_thicknesses[a] == 0 ? 1. : local_thicknesses[a];
 	  }
-	  const double a_local = 0.5*densities[0]*heat_productivities[0]*local_thickness_for_temp[0] + 0.5*densities[1]*heat_productivities[1]*local_thickness_for_temp[1] + conductivities[0]/local_thickness_for_temp[0]*T0;
+	  const double a_local = 0.5*densities[1]*heat_productivities[0]*local_thickness_for_temp[0] + 0.5*densities[2]*heat_productivities[1]*local_thickness_for_temp[1] + conductivities[0]/local_thickness_for_temp[0]*T0;
       const double b_local = 1./(conductivities[0]/local_thickness_for_temp[0]+conductivities[1]/local_thickness_for_temp[1]);
-      const double c_local = 0.5*densities[1]*heat_productivities[1]*local_thickness_for_temp[1] + conductivities[2]/local_thickness_for_temp[2]*LAB_isotherm[0];
+      const double c_local = 0.5*densities[2]*heat_productivities[1]*local_thickness_for_temp[1] + conductivities[2]/local_thickness_for_temp[2]*LAB_isotherm[0];
       const double d_local = 1./(conductivities[1]/local_thickness_for_temp[1]+conductivities[2]/local_thickness_for_temp[2]);
 	  const double T1_local = (a_local*b_local + conductivities[1]/local_thickness_for_temp[1]*c_local*d_local*b_local) / (1.-(conductivities[1]*conductivities[1])/(local_thickness_for_temp[1]*local_thickness_for_temp[1])*d_local*b_local);
       const double T2_local = (c_local + conductivities[1]/local_thickness_for_temp[1]*T1_local) * d_local;
 	  //岩石圈分界面温度，按照线性增长计算
-	  const double T3_local = local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4] != 0 ? T2_local + (LAB_isotherm[0] - T2_local) * (local_thicknesses[2] / (local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4])) : LAB_isotherm[0];
-	  const double T4_local = local_thicknesses[3] + local_thicknesses[4] != 0 ? T3_local + (LAB_isotherm[0] - T3_local) * (local_thicknesses[3] / (local_thicknesses[3] + local_thicknesses[4])) : LAB_isotherm[0];
+	  //const double T3_local = local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4] != 0 ? T2_local + (LAB_isotherm[0] - T2_local) * (local_thicknesses[2] / (local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4])) : LAB_isotherm[0];
+	  //const double T4_local = local_thicknesses[3] + local_thicknesses[4] != 0 ? T3_local + (LAB_isotherm[0] - T3_local) * (local_thicknesses[3] / (local_thicknesses[3] + local_thicknesses[4])) : LAB_isotherm[0];
 
       //确定LAB温度
 	  const double local_T_LAB = center_is_cratontic || side_is_cratontic ? LAB_isotherm[1] : LAB_isotherm[0];
+	  
 	  // The local lithospheric column
 	  //岩石圈分界面温度，按照线性增长计算
-      const double G_local = 0.5 * 
+      /* const double G_local = 0.5 * 
 	                            ( densities[1] * (2 + (2 * local_T_LAB - T0 - T1_local) * thermal_expansivities[1]) * local_thicknesses[0] 
 	                            + densities[2] * (2 + (2 * local_T_LAB - T1_local - T2_local) * thermal_expansivities[2]) * local_thicknesses[1] 
 								+ densities[3] * (2 + (2 * local_T_LAB - T2_local - T3_local) * thermal_expansivities[3]) * local_thicknesses[2] 
 								+ densities[4] * (2 + (2 * local_T_LAB - T3_local - T4_local) * thermal_expansivities[4]) * local_thicknesses[3] 
-								+ densities[5] * (2 + (local_T_LAB - T4_local) * thermal_expansivities[5]) * local_thicknesses[4]);
+								+ densities[5] * (2 + (local_T_LAB - T4_local) * thermal_expansivities[5]) * local_thicknesses[4]); */
 	  // The total local lithosphere thickness
-      const double sum_local_thicknesses = std::accumulate(local_thicknesses.begin(), local_thicknesses.end(),0);
+      //const double sum_local_thicknesses = std::accumulate(local_thicknesses.begin(), local_thicknesses.end(),0);
+	  const double sum_local_thicknesses = exclude_mantle_lower ? 
+	                                       local_thicknesses[0] + local_thicknesses[1] + local_thicknesses[2] + local_thicknesses[3]
+										 : local_thicknesses[0] + local_thicknesses[1] + local_thicknesses[2] + local_thicknesses[3] + local_thicknesses[4];
+      double G_local = 0.;								 
+	  for (unsigned int a = 1; a <= sum_local_thicknesses; ++a)
+	  {
+		  //按照模型的顺序计算浮力
+		  //1.计算温度；2.计算密度；3.计算浮力
+		  //每100m计算一次
+		  double temp_t = 0;
+		  double temp_den = 0;
+		  if(a % 100 == 0)
+		  {
+			  if (a > 0 && a <= local_thicknesses[0])
+			  {
+				  temp_t = -0.5*densities[1]*heat_productivities[0]/conductivities[0]*std::pow(a,2) + (0.5*densities[1]*heat_productivities[0]*local_thicknesses[0]/conductivities[0] + (T1_local-T0)/local_thicknesses[0])*a + T0;
+			      temp_den = densities[1] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[1]);
+			      G_local += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  else if (a > local_thicknesses[0] && a <= local_thicknesses[0] + local_thicknesses[1])
+			  {
+				  temp_t = -0.5*densities[2]*heat_productivities[1]/conductivities[1]*std::pow(a-local_thicknesses[0],2.) + (0.5*densities[2]*heat_productivities[1]*local_thicknesses[1]/conductivities[1] + (T2_local-T1_local)/local_thicknesses[1])*(a-local_thicknesses[0]) + T1_local;
+			      temp_den = densities[2] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[2]);
+			      G_local += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  else if (a > local_thicknesses[0] + local_thicknesses[1] && a <= local_thicknesses[0] + local_thicknesses[1] + local_thicknesses[2])
+			  {
+				  temp_t = (local_T_LAB-T2_local)/local_thickness_for_temp[2] *(a-local_thicknesses[0]-local_thicknesses[1]) + T2_local;
+			      temp_den = densities[3] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+			      G_local += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  else if (a > local_thicknesses[0] + local_thicknesses[1] + local_thicknesses[2] && a <= local_thicknesses[0] + local_thicknesses[1] + local_thicknesses[2] + local_thicknesses[3])
+			  {
+				  temp_t = (local_T_LAB-T2_local)/local_thickness_for_temp[2] *(a-local_thicknesses[0]-local_thicknesses[1]) + T2_local;
+			      temp_den = densities[4] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+			      G_local += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+			  else
+			  {
+				  temp_t = (local_T_LAB-T2_local)/local_thickness_for_temp[2] *(a-local_thicknesses[0]-local_thicknesses[1]) + T2_local;
+			      temp_den = densities[5] * (1 + std::max(0., Tp - temp_t) * thermal_expansivities[3]);
+			      G_local += temp_den * 100;
+				  temp_t = 0;
+				  temp_den = 0;
+			  }
+		  }
+	  }
 	  //测试：所有区域使用新规则计算高程，基准面设定为Layer thicknesses的岩石圈
-	  const double h_local = center_is_cratontic || side_is_cratontic ? sum_local_thicknesses - G_local / densities[0] - 195 : sum_local_thicknesses - G_local / densities[0];
-
+	  const double h_local = sum_local_thicknesses - G_local / densities[0];
 	  return h_local - h_base;
+	  //return 0.;
     }
 
 
@@ -414,6 +532,8 @@ namespace aspect
                                                                 2,
                                                                 "Segment of cratontic lithosphere boundary");
 		  center_cratontic = prm.get_bool ("Inside the boundaries is cratontic lithosphere");
+		  //20251204
+		  exclude_mantle_lower = prm.get_bool ("Exclude phase 'mantle_lower' from mantle material");
 		  
         }
         prm.leave_subsection();

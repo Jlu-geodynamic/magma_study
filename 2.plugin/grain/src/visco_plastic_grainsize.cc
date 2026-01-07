@@ -19,9 +19,9 @@
 */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/visco_plastic_grainsize.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/postprocess/melt_extraction.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/comp/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/visco_plastic_grainsize.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/postprocess/melt_extraction.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/comp/lithosphere_rift.h>
 
 
 #include <aspect/utilities.h>
@@ -279,7 +279,7 @@ namespace aspect
 	   //地幔分为上、中、下三层，默认下地幔和软流圈可发生熔融。
 	   //后续可根据应用情况调整程序。
 	   
-	   const unsigned int judgement_mantle_upper_id = this->introspection().compositional_index_for_name("mantle_upper") + 1;
+	   //const unsigned int judgement_mantle_upper_id = this->introspection().compositional_index_for_name("mantle_upper") + 1;
 	   const unsigned int judgement_mantle_middle_id = this->introspection().compositional_index_for_name("mantle_middle") + 1;
 	   const unsigned int judgement_mantle_lower_id = this->introspection().compositional_index_for_name("mantle_lower") + 1;
 	   const unsigned int judgement_mantle_new_crust_id = this->introspection().compositional_index_for_name("new_crust") + 1;

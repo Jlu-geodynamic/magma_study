@@ -19,12 +19,12 @@
 */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/comp/lithosphere_rift.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/temp/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/comp/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/temp/lithosphere_rift.h>
 #include <aspect/utilities.h>
 #include <aspect/geometry_model/box.h>
 #include <aspect/boundary_temperature/interface.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/visco_plastic_grainsize.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/visco_plastic_grainsize.h>
 #include <aspect/heating_model/interface.h>
 
 #include <cmath>
@@ -85,20 +85,60 @@ namespace aspect
       // Compute the local thickness of the upper crust, lower crust and mantle part of the lithosphere
       // based on the distance from the rift axis.
       std::vector<double> local_thicknesses(3);
+	  //20251221 测试：针对斜坡区域，温度结构与初始设置分开，温度结构按照正常结构计算，斜坡处区分岩石圈与软流圈
+	  std::vector<double> local_thicknesses_for_temp(3);
 	  //20240704
 	  //新增选项：边界内为克拉通，或边界外为克拉通
 	  //20240705
 	  //克拉通和普通岩石圈的初始温度单独计算
-	  const bool center_is_cratontic = add_cratontic && center_cratontic && surface_position[0] >= cratontic_boundary[0] && surface_position[0] < cratontic_boundary[1];
-	  const bool side_is_cratontic = add_cratontic && !center_cratontic &&(surface_position[0] < cratontic_boundary[0] || surface_position[0] >= cratontic_boundary[1]);
+	  const bool center_is_cratontic = add_cratontic && center_cratontic && surface_position[0] > cratontic_boundary[0] && surface_position[0] < cratontic_boundary[1];
+	  const bool side_is_cratontic = add_cratontic && !center_cratontic &&(surface_position[0] < cratontic_boundary[0] || surface_position[0] > cratontic_boundary[1]);
 	  bool in_cratontic = false;
+	  //20251219 斜坡相关更新
+	  //默认克拉通更厚
+	  //倾斜区域深度
+	  const double total_normal_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(),0);
+	  const double total_cratontic_thickness = std::accumulate(cratontic_layer_thicknesses.begin(), cratontic_layer_thicknesses.end(),0);
+	  const double max_slope_length = total_cratontic_thickness - total_normal_thickness;
+	  //倾斜区域宽度
+	  const double max_slope_width = max_slope_length / std::tan(slope_angle * numbers::PI / 180.0);
+	  //当前位置高出普通岩石圈深度
+	  //用depth_slope值判定是否处于斜坡，或是否启用斜坡
+	  double depth_slope = 0;
+	  if (add_craton_slope && center_is_cratontic && (surface_position[0] <= cratontic_boundary[0] + max_slope_width || surface_position[0] >= cratontic_boundary[1] - max_slope_width))
+	  {
+		  //进入判定后需让depth_slope非0
+		  depth_slope = surface_position[0] <= cratontic_boundary[0] + max_slope_width 
+		                ? std::max(1e-5, max_slope_length * (surface_position[0] - cratontic_boundary[0]) / max_slope_width)
+                        : std::max(1e-5, max_slope_length * (cratontic_boundary[1] - surface_position[0]) / max_slope_width);
+	  }
+	  else if (add_craton_slope && side_is_cratontic && ((surface_position[0] >= cratontic_boundary[0] - max_slope_width && surface_position[0] < cratontic_boundary[0]) || (surface_position[0] > cratontic_boundary[1] && surface_position[0] <= cratontic_boundary[1] + max_slope_width)))
+	  {
+		  //进入判定后需让depth_slope非0
+		  depth_slope = surface_position[0] >= cratontic_boundary[0] - max_slope_width && surface_position[0] < cratontic_boundary[0]
+		                ? std::max(1e-5, max_slope_length * (cratontic_boundary[0] - surface_position[0]) / max_slope_width)
+						: std::max(1e-5, max_slope_length * (surface_position[0] - cratontic_boundary[1]) / max_slope_width);
+	  }
+	  else
+		  depth_slope = 0;
+	  
 	  if (center_is_cratontic || side_is_cratontic)
 	  {
 		  in_cratontic = true;
 		  local_thicknesses[0] = cratontic_layer_thicknesses[0];
 		  local_thicknesses[1] = cratontic_layer_thicknesses[1];
 		  //20240716
-		  local_thicknesses[2] = exclude_mantle_lower ? cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3]
+		  //20251219 只需判定地幔相厚度
+		  if(depth_slope > 0)
+			  local_thicknesses[2] = exclude_mantle_lower ? std::min(cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3], total_normal_thickness + depth_slope - cratontic_layer_thicknesses[0] - cratontic_layer_thicknesses[1])
+		                                                  : total_normal_thickness + depth_slope - cratontic_layer_thicknesses[0] - cratontic_layer_thicknesses[1];
+		  else
+			  local_thicknesses[2] = exclude_mantle_lower ? cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3]
+		                                              : cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4];
+		  
+		  local_thicknesses_for_temp[0] = cratontic_layer_thicknesses[0];
+		  local_thicknesses_for_temp[1] = cratontic_layer_thicknesses[1];
+		  local_thicknesses_for_temp[2] = exclude_mantle_lower ? cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3]
 		                                              : cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4];
 	  }
 	  else
@@ -127,6 +167,7 @@ namespace aspect
 			
 		  local_thicknesses[2] = exclude_mantle_lower ? mantle_upper + mantle_middle
 			                                          : mantle_upper + mantle_middle + mantle_lower;
+		  local_thicknesses_for_temp = local_thicknesses;
 		  
           
 	  }
@@ -138,7 +179,7 @@ namespace aspect
 
       const double depth = this->get_geometry_model().depth(position);
 
-      return temperature(depth, in_cratontic, local_thicknesses);
+      return temperature(depth, in_cratontic, local_thicknesses_for_temp, local_thicknesses);
     }
 
 
@@ -147,12 +188,26 @@ namespace aspect
     LithosphereRift<dim>::
     temperature (const double depth,
 	             const bool in_cratontic,
-                 const std::vector<double> layer_thicknesses) const
+                 const std::vector<double> layer_thicknesses,
+				 const std::vector<double> layer_thicknesses_for_init) const
     {
+	  // 20251219 确定LAB温度
+	  /* double current_LAB = 0.;
+	  if (!in_cratontic)
+		  current_LAB = LAB_isotherm[0];
+	  else 
+	  {
+		  const double total_normal_thickness_temp = std::accumulate(thicknesses.begin(), thicknesses.end(),0);
+		  const double craton_mantle_depend = exclude_mantle_lower ? cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3]
+		                                                           : cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3] + cratontic_layer_thicknesses[4];
+		  current_LAB = layer_thicknesses[2] == craton_mantle_depend ? LAB_isotherm[1] : LAB_isotherm[0] + 0.4 * (layer_thicknesses[2] - total_normal_thickness_temp) / 1e3;
+	  } */
+	  //20251221 斜坡区域LAB按照正常厚度计算
+	  const double current_LAB = in_cratontic ? LAB_isotherm[1] : LAB_isotherm[0];
       // Compute some constants
       const double a = 0.5*densities[0]*heat_productivities[0]*layer_thicknesses[0] + 0.5*densities[1]*heat_productivities[1]*layer_thicknesses[1] + conductivities[0]/layer_thicknesses[0]*T0;
       const double b = 1./(conductivities[0]/layer_thicknesses[0]+conductivities[1]/layer_thicknesses[1]);
-      const double c = in_cratontic? 0.5*densities[1]*heat_productivities[1]*layer_thicknesses[1] + conductivities[2]/layer_thicknesses[2]*LAB_isotherm[1] : 0.5*densities[1]*heat_productivities[1]*layer_thicknesses[1] + conductivities[2]/layer_thicknesses[2]*LAB_isotherm[0];
+      const double c = 0.5*densities[1]*heat_productivities[1]*layer_thicknesses[1] + conductivities[2]/layer_thicknesses[2]*current_LAB;
       const double d = 1./(conductivities[1]/layer_thicknesses[1]+conductivities[2]/layer_thicknesses[2]);
 
       //Temperature at boundary between layer 1 and 2
@@ -161,19 +216,19 @@ namespace aspect
       const double T2 = (c + conductivities[1]/layer_thicknesses[1]*T1) * d;
 
       // Temperature in layer 1
-      if (depth < layer_thicknesses[0])
+      if (depth < layer_thicknesses_for_init[0])
         return -0.5*densities[0]*heat_productivities[0]/conductivities[0]*std::pow(depth,2) + (0.5*densities[0]*heat_productivities[0]*layer_thicknesses[0]/conductivities[0] + (T1-T0)/layer_thicknesses[0])*depth + T0;
       // Temperature in layer 2
-      else if (depth < layer_thicknesses[0]+layer_thicknesses[1])
+      else if (depth < layer_thicknesses_for_init[0]+layer_thicknesses_for_init[1])
         return -0.5*densities[1]*heat_productivities[1]/conductivities[1]*std::pow(depth-layer_thicknesses[0],2.) + (0.5*densities[1]*heat_productivities[1]*layer_thicknesses[1]/conductivities[1] + (T2-T1)/layer_thicknesses[1])*(depth-layer_thicknesses[0]) + T1;
       // Temperature in layer 3
-      else if (depth < layer_thicknesses[0]+layer_thicknesses[1]+layer_thicknesses[2])
-        return in_cratontic ? (LAB_isotherm[1]-T2)/layer_thicknesses[2] *(depth-layer_thicknesses[0]-layer_thicknesses[1]) + T2 : (LAB_isotherm[0]-T2)/layer_thicknesses[2] *(depth-layer_thicknesses[0]-layer_thicknesses[1]) + T2;
+      else if (depth < layer_thicknesses_for_init[0]+layer_thicknesses_for_init[1]+layer_thicknesses_for_init[2])
+        return (current_LAB-T2)/layer_thicknesses[2] *(depth-layer_thicknesses[0]-layer_thicknesses[1]) + T2;
       // Return a constant sublithospheric temperature of 10*LAB_isotherm.
       // This way we can combine the continental geotherm with an adiabatic profile from the input file
       // using the "minimum" operator on the "List of initial temperature models"
       else if (use_compensation_depth && depth < compensation_depth)
-        return in_cratontic ? 10 * LAB_isotherm[1] : LAB_isotherm[0];
+        return in_cratontic ? 10 * LAB_isotherm[1] : 10 * LAB_isotherm[0];
       else
         return 10.*LAB_isotherm[0];
     }
@@ -257,6 +312,10 @@ namespace aspect
 		  center_cratontic = prm.get_bool ("Inside the boundaries is cratontic lithosphere");
 		  //20240716
 		  exclude_mantle_lower = prm.get_bool ("Exclude phase 'mantle_lower' from mantle material");
+		  //20251219
+		  //克拉通底部斜坡设置
+		  add_craton_slope = prm.get_bool ("Add slope at the bottom of craton");
+		  slope_angle = prm.get_double ("Slope angle at the bottom of craton");
         }
         prm.leave_subsection();
       }

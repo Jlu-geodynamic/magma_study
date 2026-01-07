@@ -1,15 +1,15 @@
-set Additional shared libraries            = /fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/build/libmy_plugin.so, /fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/build/libmy_plugin.so, /fs2/home/liuzhonglan/wy/lib_extra/melt20241204/comp/build/libmy_plugin.so
+set Additional shared libraries            = /fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/build/libmy_plugin.so, /fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/build/libmy_plugin.so, /fs2/home/liuzhonglan/wy/lib_extra/melt20251231/comp/build/libmy_plugin.so
 set Resume computation			= auto
 
 set Dimension                              = 2
-set End time                               = 25e6
+set End time                               = 20e6
 set Use years in output instead of seconds = true
 set CFL number                             = 0.5
 set Maximum time step			   = 5e3
 
 set Adiabatic surface temperature          = 1577
 set Pressure normalization                 = no
-set Output directory                       = L_50_density_40_MLD
+set Output directory                       = L_75_denstiy_50_noMLD
 
 set Nonlinear solver scheme                = single Advection, iterated Newton Stokes
 set Max nonlinear iterations               = 30
@@ -77,13 +77,11 @@ subsection Initial temperature model
                                            0; \
 					   0; \
                                            0; \
-                                           0; \
-                                           0; \
-                                           if(x<22e3,1,0); \
-                                           if(x>=20e3&x<34e3,1,0); \
+                                           if(x<23e3,1,0); \
+                                           if(x>=20e3&x<35e3,1,0); \
                                            if(x>=32e3&x<120e3,1,0); \
-                                           if(x>=100e3&x<130e3,1,0); \
-                                           if(x>=130e3&x<200e3,1,0); \
+                                           0; \
+                                           if(x>=120e3&x<200e3,1,0); \
                                            0; \
                                            0; \
                                            0; \
@@ -98,9 +96,9 @@ end
 
 
 subsection Compositional fields
-  set Number of fields = 17
+  set Number of fields = 15
   # attention: _Plugin_InitialCompositionRift requires a field called strain to seed in the initial noise
-  set Names of fields = sediment_age, noninitial_plastic_strain, plastic_strain, viscous_strain_grainsize, sediment_1, sediment_2, upper, lower, mantle_upper, mantle_middle, mantle_lower, water_content, max_melt, melt_record, melt_fraction, rift_grain_size, new_crust
+  set Names of fields = sediment_age, plastic_strain, viscous_strain_grainsize, sediment_1, upper, lower, mantle_upper, mantle_middle, mantle_lower, water_content, max_melt, melt_record, melt_fraction, rift_grain_size, new_crust
 end 
 
 subsection Initial composition model
@@ -123,10 +121,12 @@ subsection Initial composition model
     # Cratonic Lithosphere
     # This function is only avaliable in 2D models.
     set Add cratontic lithosphere = true
-    set Segment of cratontic lithosphere boundary = 250e3, 350e3
+    set Segment of cratontic lithosphere boundary = 265e3, 335e3
     set Inside the boundaries is cratontic lithosphere = false
+    set Add slope at the bottom of craton = true
+    set Slope angle at the bottom of craton = 45
     # order:                                                    upper, lower, mantle_upper, mantle_middle, mantle_lower
-    set Cratontic lithosphere layer thicknesses = 22e3,  12e3 ,      66e3      ,        30e3       ,         70e3
+    set Cratontic lithosphere layer thicknesses = 23e3,  12e3 ,      85e3      ,          0.       ,         80e3
     # Reference thicknesses
     # order:                                                    upper, lower, mantle_upper, mantle_middle, mantle_lower
     set Layer thicknesses                              = 20e3,  12e3 ,         88e3      ,           0.          ,          0.
@@ -137,12 +137,12 @@ subsection Initial composition model
     #         Point2
     # Syntax: where Point is point_x,point_y
     # order:                                                                upper, lower, mantle_upper, mantle_middle, mantle_lower
-    set Lithospheric polygon layer thicknesses         =  20e3,   12e3 ,       88e3       ,           0.         ,           0.
+    set Lithospheric polygon layer thicknesses         =  23e3,   12e3 ,       85e3       ,           0.         ,           0.
     # Syntax:                                                       point_x, point_y
-    set Lithospheric polygons                          =  195e3  > 405e3
+    set Lithospheric polygons                          =  290e3  > 310e3
     
     # lateral transition to reference thickness
-    set Half width of polygon smoothing                = 140e3 
+    set Half width of polygon smoothing                = 1. 
   end
   
   # Inherited noise 
@@ -177,22 +177,20 @@ subsection Boundary composition model
     set Coordinate system   = cartesian
     set Variable names      = x,y,t
     set Function constants  = tsed=2e6 # duration of sedimentation switch time intervall 
-    set Function expression           = if(y>80e3, t/1e6, 0); \
+    set Function expression           = if(y>250e3, t/1e6, 0); \
                                         0; \
-					0; \
                                         0; \
-                                        if(y>80e3 && sign( sin( t/tsed * pi) ) == 1,1,0); \
-                                        if(y>80e3 && sign( sin( t/tsed * pi) ) == -1,1,0); \
-                                        if(y>80e3 && t==0, 1,0); \
+                                        if(y>250e3 && t>0,1,0); \
+                                        if(y>250e3 && t==0, 1,0); \
                                         0; \
                                         0; \
                                         0; \
                                         0; \
-                                        if(y>80e3, 50, 500); \
+                                        if(y>250e3, 50, 500); \
                                         0; \
                                         0; \
                                         0; \
-                                        if(y>80e3, 1e-3, 5e-2); \
+                                        if(y>250e3, 1e-3, 5e-2); \
                                         0  
   end
 end
@@ -224,7 +222,7 @@ subsection Mesh deformation
     set Additional fastscape refinement = 0
     set Use marine component = true
     set Use ghost nodes = true
-    set Y extent in 2d = 100e3
+    set Y extent in 2d = 50e3
     set Sediment rain = 0.1e-3, 0.05e-3, 0.0e-3  # Q0, m/yr
     set Sediment rain intervals = 10e6, 20e6
     set Use velocities = true
@@ -328,12 +326,12 @@ subsection Material model
 
     # Thermal diffusivity is adjusted to match thermal conductivities
     # assumed in assigning the initial geotherm
-    # order:                                    background                                                                                                                                                                       sediment1   sediment2            upper                             lower                           mantle_upper              mantle_middle                 mantle_lower
-    set Thermal diffusivities =8.384146341463415e-07, 8.333333333333333e-07, 8.333333333333333e-07,  8.333333333333333e-07, 8.333333333333333e-07 , 7.2751e-07, 7.2751e-07, 7.71604938271605e-07, 7.309941520467837e-07,8.384146341463415e-07, 8.384146341463415e-07, 8.384146341463415e-07,8.333333333333333e-07, 8.333333333333333e-07, 8.333333333333333e-07,  8.333333333333333e-07, 8.333333333333333e-07, 7.309941520467837e-07
+    # order:                                    background                                                                                                                               sediment            upper                             lower                           mantle_upper              mantle_middle                 mantle_lower
+    set Thermal diffusivities =8.384146341463415e-07, 8.333333333333333e-07, 8.333333333333333e-07,  8.333333333333333e-07, 7.2751e-07, 7.71604938271605e-07, 7.309941520467837e-07,8.384146341463415e-07, 8.384146341463415e-07, 8.384146341463415e-07,8.333333333333333e-07, 8.333333333333333e-07, 8.333333333333333e-07,  8.333333333333333e-07, 8.333333333333333e-07, 7.309941520467837e-07
     set Heat capacities       =             1200.
-    set Densities             =                 3157.        ,                       1000.         ,                   1000.         ,                       1000.         ,                    1000.          ,             2404.,         2404.,                2608.        ,                     2753.              ,                   3117.         ,                 3117.               ,                3117.           ,               1000.              ,                  1000.             ,              1000.              ,                 1000.              ,               1000.              ,                     2753. 
-    set Thermal expansivities =        3.0e-5        ,                       3.0e-5        ,                   3.0e-5        ,                      3.0e-5        ,                   3.0e-5         ,             3.7e-5,        3.7e-5,               2.7e-5       ,                    2.7e-5             ,                   3.0e-5        ,                 3.0e-5              ,                3.0e-5          ,             3.0e-5               ,                3.0e-5            ,              3.0e-5             ,                3.0e-5             ,               3.0e-5              ,                    2.7e-5      
-    set Initial water content   =          500          ,                          50           ,                     50            ,                         50           ,                       50          ,                50   ,           50  ,                 50           ,                       50                ,                     50           ,                   3268               ,                   50              ,                 50                 ,                  50               ,                50                ,                   50                 ,                  50                ,                       50
+    set Densities             =                 3250.        ,                       1000.         ,                   1000.         ,                       1000.         ,         2404.,                2608.        ,                     2753.              ,                   3200.         ,                 3160.               ,                3200.           ,               1000.              ,                  1000.             ,              1000.              ,                 1000.              ,               1000.              ,                     2753. 
+    set Thermal expansivities =        3.0e-5        ,                       3.0e-5        ,                   3.0e-5        ,                      3.0e-5        ,        3.7e-5,               2.7e-5       ,                    2.7e-5             ,                   3.0e-5        ,                 3.0e-5              ,                3.0e-5          ,             3.0e-5               ,                3.0e-5            ,              3.0e-5             ,                3.0e-5             ,               3.0e-5              ,                    2.7e-5      
+    set Initial water content   =          500          ,                          50           ,                     50            ,                         50           ,           50  ,                 50           ,                       50                ,                     50           ,                   3268               ,                   50              ,                 50                 ,                  50               ,                50                ,                   50                 ,                  50                ,                       50
     set Thermal conductivities modification = true
     #set Depth of thermal conductivities modification = 9e3
     set Factor of thermal conductivities modification = 14
@@ -411,39 +409,39 @@ subsection Material model
     # Note that the viscous pre-factors below are scaled to plane strain from unixial strain experiments.
 
     # Dislocation creep
-    # order:                                                         background                                                                                          sediment1         sediment2            upper                lower          mantle_upper               mantle_middle            mantle_lower
-    set Prefactors for dislocation creep=8.944739416624727e-20,    1e-20      ,      1e-20     ,     1e-20      ,      1e-20      ,     8.57e-28      ,     8.57e-28     ,      8.57e-28     ,     7.13e-18     ,      1.10e-16         ,  8.944739416624727e-20,      1.10e-16         ,      1e-20         ,        1e-20      ,      1e-20     ,     1e-20      ,      1e-20      ,     8.91e-22     
-    set Stress exponents for dislocation creep    =      3.5           ,           1.0     ,        1.0      ,        1.0        ,         1.0       ,           4.0          ,          4.0        ,          4.0         ,          3.0         ,         3.5              ,               3.5                    ,         3.5              ,        1.0            ,         1.0        ,        1.0       ,       1.0        ,        1.0          ,         4.2       
-    set Activation energies for dislocation creep =   480.e3        ,       530.e3      ,     530.e3    ,     530.e3     ,     530.e3     ,      223.e3         ,       223.e3      ,       223.e3       ,       345.e3       ,       530.e3          ,            480.e3                 ,       530.e3           ,     530.e3         ,      530.e3     ,    530.e3      ,     530.e3    ,     530.e3        ,       445.e3    
-    set Activation volumes for dislocation creep  =  10.e-6         ,      18.e-6      ,     18.e-6    ,     18.e-6      ,     18.e-6       ,             0.           ,            0.        ,            0.         ,       38.e-6       ,       13.e-6          ,           10.e-6                  ,       13.e-6           ,      18.e-6         ,      18.e-6     ,     18.e-6      ,     18.e-6    ,     18.e-6        ,         0.      
-    set Water fugacity exponent for dislocation creep = 1.2      ,          0.          ,          0.       ,          0.       ,          0.         ,             0.           ,            0.         ,            0.         ,          0.           ,           0.            ,              1.2                    ,           0.             ,          0.            ,         0.         ,          0.         ,        0.       ,         0           ,         0.       
+    # order:                                                         background                                                                  sediment            upper                lower          mantle_upper               mantle_middle            mantle_lower
+    set Prefactors for dislocation creep= 8.944739416624727e-20 ,    1e-20      ,      1e-20     ,     1e-20,     8.57e-28     ,      8.57e-28     ,     7.13e-18     ,      2.66e-17         ,  8.944739416624727e-20,      1.10e-16         ,      1e-20         ,        1e-20      ,      1e-20     ,     1e-20      ,      1e-20      ,     8.91e-22     
+    set Stress exponents for dislocation creep    =      3.5           ,           1.0     ,        1.0      ,        1.0,          4.0        ,          4.0         ,          3.0         ,         3.5              ,               3.5                    ,         3.5              ,        1.0            ,         1.0        ,        1.0       ,       1.0        ,        1.0          ,         4.2       
+    set Activation energies for dislocation creep =   520.e3        ,       530.e3      ,     530.e3    ,     530.e3,       223.e3      ,       223.e3       ,       345.e3       ,       530.e3          ,            520.e3                 ,       530.e3           ,     530.e3         ,      530.e3     ,    530.e3      ,     530.e3    ,     530.e3        ,       445.e3    
+    set Activation volumes for dislocation creep  =  11.e-6         ,      18.e-6      ,     18.e-6    ,     18.e-6,            0.        ,            0.         ,       38.e-6       ,       13.e-6          ,           11.e-6                  ,       13.e-6           ,      18.e-6         ,      18.e-6     ,     18.e-6      ,     18.e-6    ,     18.e-6        ,         0.      
+    set Water fugacity exponent for dislocation creep = 1.2      ,          0.          ,          0.       ,          0.,            0.         ,            0.         ,          0.           ,           0.            ,              1.2                    ,           0.             ,          0.            ,         0.         ,          0.         ,        0.       ,         0           ,         0.       
 
     # Diffusion creep
-    # order:                                                                background                                                                                 sediment1          sediment2            upper               lower            mantle_upper              mantle_middle                  mantle_lower
-    set Prefactors for diffusion creep          =         9.94e-19   ,    2.25e-9     ,     2.25e-9   ,    2.25e-9     ,    2.25e-9     ,     5.97e-19     ,      5.97e-19    ,       5.97e-19     ,     2.99e-25     ,          1.49e-15            ,           9.94e-19               ,      1.49e-15          ,      2.25e-9      ,      2.25e-9   ,    2.25e-9     ,     2.25e-9   ,    2.25e-9     ,     2.99e-25     
+    # order:                                                         background                                                                     sediment            upper               lower            mantle_upper              mantle_middle                  mantle_lower
+    set Prefactors for diffusion creep          =         9.94e-19   ,    2.25e-9     ,     2.25e-9   ,    2.25e-9     ,      5.97e-19    ,       5.97e-19     ,     2.99e-25     ,          9.93e-16            ,           9.94e-19               ,      1.49e-15          ,      2.25e-9      ,      2.25e-9   ,    2.25e-9     ,     2.25e-9   ,    2.25e-9     ,     2.99e-25     
     #set Stress exponents for diffusion creep    =       1.0
-    set Activation energies for diffusion creep =      335.e3    ,     375.e3      ,     375.e3     ,    375.e3      ,     375.e3      ,      223.e3      ,        223.e3      ,         223.e3       ,      159.e3       ,             375.e3           ,           335.e3                  ,         375.e3           ,       375.e3      ,       375.e3    ,     375.e3      ,     375.e3     ,    375.e3      ,      159.e3      
-    set Activation volumes for diffusion creep  =      4.e-6     ,      6.e-6        ,       6.e-6     ,     6.e-6       ,      6.e-6       ,          0.          ,            0.         ,             0.          ,       38.e-6      ,              6.e-6            ,            4.e-6                   ,           6.e-6            ,        6.e-6        ,        6.e-6     ,      6.e-6       ,       6.e-6      ,     6.e-6         ,       38.e-6
-    set Grain size exponents for diffusion creep =       3        ,         0.          ,          0.         ,        0.        ,         0.        ,          2           ,            2           ,            2          ,           3          ,                3                ,              3                       ,            3                ,          0.           ,          0.       ,           0.       ,          0.         ,        0.          ,          3
-    set Water fugacity exponent for diffusion creep = 1.       ,          0.         ,          0.         ,        0.        ,         0.        ,          0.          ,            0.          ,            0.          ,           0.          ,              0.                ,              1.                      ,            0.                ,          0.           ,          0.       ,           0.       ,          0.         ,        0.          ,          0.
+    set Activation energies for diffusion creep =      335.e3    ,     375.e3      ,     375.e3     ,    375.e3      ,        223.e3      ,         223.e3       ,      159.e3       ,             375.e3           ,           335.e3                  ,         375.e3           ,       375.e3      ,       375.e3    ,     375.e3      ,     375.e3     ,    375.e3      ,      159.e3      
+    set Activation volumes for diffusion creep  =      4.e-6     ,      6.e-6        ,       6.e-6     ,     6.e-6       ,            0.         ,             0.          ,       38.e-6      ,              6.e-6            ,            4.e-6                   ,           6.e-6            ,        6.e-6        ,        6.e-6     ,      6.e-6       ,       6.e-6      ,     6.e-6         ,       38.e-6
+    set Grain size exponents for diffusion creep =       3        ,         0.          ,          0.         ,        0.        ,            2           ,            2          ,           3          ,                3                ,              3                       ,            3                ,          0.           ,          0.       ,           0.       ,          0.         ,        0.          ,          3
+    set Water fugacity exponent for diffusion creep = 1.       ,          0.         ,          0.         ,        0.        ,            0.          ,            0.          ,           0.          ,              0.                ,              1.                      ,            0.                ,          0.           ,          0.       ,           0.       ,          0.         ,        0.          ,          0.
 
 
     # Grain size
-    # order:                                                           background                                                                                        sediment1          sediment2        upper             lower         mantle_upper  mantle_middle  mantle_lower 
-    set Grain growth rate constant =                          3       ,           3        ,        3         ,         3          ,          3         ,          3         ,             3          ,             3          ,           3         ,            3         ,            3         ,            3         ,           3         ,             3         ,             3          ,             3          ,           3          ,           3   
-    set Grain growth activation energy =                 620e3    ,      3.5e5      ,       3.5e5      ,     3.5e5       ,      3.5e5       ,     3.5e5      ,          3.5e5      ,          3.5e5       ,       3.5e5       ,        620e3       ,        620e3       ,       620e3       ,           3.5e5         ,        3.5e5      ,       3.5e5      ,     3.5e5       ,      3.5e5          ,       3.5e5 
-    set Grain growth activation volume =                 5e-6     ,       8e-6       ,       8e-6       ,     8e-6        ,      8e-6        ,       8e-6       ,          8e-6       ,          8e-6        ,       8e-6        ,         5e-6        ,         5e-6         ,         5e-6        ,          8e-6            ,        8e-6       ,       8e-6       ,     8e-6        ,      8e-6         ,       8e-6
-    set Grain size calculation flag =                             1       ,           0        ,          0         ,        0          ,         0          ,          0         ,             0         ,              0         ,         0            ,            1            ,            1          ,           1          ,             0          ,              0         ,        0          ,         0          ,          0          ,         0 
+    # order:                                                           background                                                                   sediment              upper              lower         mantle_upper   mantle_middle  mantle_lower 
+    set Grain growth rate constant =                          3       ,           3        ,        3         ,         3          ,             3          ,             3          ,           3         ,            3         ,            3         ,            3         ,           3         ,             3         ,             3          ,             3          ,           3          ,           3   
+    set Grain growth activation energy =                 620e3    ,      3.5e5      ,       3.5e5      ,     3.5e5       ,          3.5e5      ,          3.5e5       ,       3.5e5       ,        620e3       ,        620e3       ,       620e3       ,           3.5e5         ,        3.5e5      ,       3.5e5      ,     3.5e5       ,      3.5e5          ,       3.5e5 
+    set Grain growth activation volume =                 5e-6     ,       8e-6       ,       8e-6       ,     8e-6        ,          8e-6       ,          8e-6        ,       8e-6        ,         5e-6        ,         5e-6         ,         5e-6        ,          8e-6            ,        8e-6       ,       8e-6       ,     8e-6        ,      8e-6         ,       8e-6
+    set Grain size calculation flag =                             1       ,           0        ,          0         ,        0          ,             0         ,              0         ,         0            ,            1            ,            1          ,           1          ,             0          ,              0         ,        0          ,         0          ,          0          ,         0 
     # initial grainsize increases logarithmically from Moho to LAB
-    # order:                                                          below LAB                                                                                        sediment1          sediment2            upper              lower                 Moho          
-    set Initial Grain size  =                                        3e-2     ,       1e-3       ,       1e-3       ,     1e-3        ,      1e-3        ,       1e-3       ,          1e-3       ,           1e-3        ,      1e-3          ,         5e-3        ,      5e-3        ,      5e-3        ,      1e-3        ,      1e-3       ,       1e-3       ,     1e-3        ,      1e-3        ,      1e-3
+    # order:                                                          below LAB                                                                      sediment              upper              lower                 Moho          
+    set Initial Grain size  =                                        5e-2     ,       1e-3       ,       1e-3       ,     1e-3        ,          1e-3       ,           1e-3        ,      1e-3          ,         5e-2        ,      2e-3        ,      5e-2        ,      1e-3        ,      1e-3       ,       1e-3       ,     1e-3        ,      1e-3        ,      1e-3
     set Grain growth exponent =                               3.2
     set Work fraction for boundary area change =   3e-3
     set Geometric constant =                                      3
     set Average specific grain boundary energy =      1.0
     set Minimum Grain Size =                                  2e-5
-    set Maximum Grain Size =                                 5e-2         
-    set Depth of banning grain calculation =            2e3 
+    set Maximum Grain Size =                                 8e-2         
+    set Depth of banning grain calculation =            0.
 
     set edotii limit for grain size reduction =           5e-16
     set Ratio of fractions modification =                  2e-2
@@ -481,20 +479,19 @@ subsection Mesh refinement
     set Coordinate system   = cartesian
     set Variable names      = x,y
     #set Function expression = if(y>=160e3, 4, if(y<160e3 && y>=100e3 && x >= 100e3 && x <= 350e3, 1, if(y<=5e3, 3, 1)))
-    set Function expression = if(y>=298e3, 4, if(y<298e3 && y>=260e3, if(x>=170e3 && x<430e3, 4, 2), if(y<260e3 && y>=90e3, if(x>=170e3 && x<430e3, 2, 1), if(y<=5e3, 3, 0))))
+    set Function expression = if(y>=298e3, 4, if(y<298e3 && y>=260e3, if(x>=170e3 && x<430e3, 4, 2), if(y<260e3 && y>=90e3, if(x>=170e3 && x<430e3, 2, 1), if(y<=5e3, 0, 0))))
   end
 
 
   subsection Composition
-    set Sediment 1 refinement = 4, 4, 4
-    set Sediment 2 refinement = 5, 4, 4
-    set Upper crust refinement = 6, 2, 4
-    set Lower crust refinement = 7, 2, 4
-    set Mantle upper refinement = 8, 0, 4
-    set Mantle middle refinement = 9, 0, 4
-    set Mantle lower refinement = 10, 0, 4
-    set Melt refinement = 14, 0, 4
-    set New crust refinement = 16, 4, 4
+    set Sediment 1 refinement = 3, 4, 4
+    set Upper crust refinement = 4, 2, 4
+    set Lower crust refinement = 5, 2, 4
+    set Mantle upper refinement = 6, 0, 4
+    set Mantle middle refinement = 7, 0, 4
+    set Mantle lower refinement = 8, 0, 4
+    set Melt refinement = 12, 0, 4
+    set New crust refinement = 14, 4, 4
   end
   
 end
@@ -502,9 +499,9 @@ end
 subsection Heating model
   set List of model names = compositional heating, adiabatic heating, latent heat viscoplastic melt
   subsection Compositional heating
-    # order:                                                                                      background                                                                      sediment_1 sediment_2   upper        lower     mantle_upper  mantle_middle mantle_lower
-    set Use compositional field for heat production averaging =             0         ,        0        ,       0       ,       0        ,       0        ,        1        ,       1       ,       1       ,       1       ,          1          ,          1          ,           1          ,          0       ,          0        ,       0       ,       0        ,       0           ,      0       
-    set Compositional heating values                          =                          0         ,       0         ,      0        ,      0         ,       0        ,    1.5e-6    ,   1.5e-6    ,   1.3e-6   ,   0.35e-6   ,         0          ,          0           ,          0          ,          0        ,          0         ,       0         ,      0        ,      0           ,      0   
+    # order:                                                                                      background                                                      sediment     upper        lower     mantle_upper  mantle_middle mantle_lower
+    set Use compositional field for heat production averaging =             0         ,        0        ,       0       ,       0        ,       1       ,       1       ,       1       ,          1          ,          1          ,           1          ,          0       ,          0        ,       0       ,       0        ,       0           ,      0       
+    set Compositional heating values                          =                          0         ,       0         ,      0        ,      0         ,   1.5e-6    ,   1.3e-6   ,   0.35e-6   ,         0          ,          0           ,          0          ,          0        ,          0         ,       0         ,      0        ,      0           ,      0   
   end
 
   subsection Adiabatic heating
@@ -526,15 +523,13 @@ subsection Adiabatic conditions model
     # Attention: make sure it is the same as in "subsection Initial temperature model" above
     set Function expression           = 0; \
                                         0; \
-					0; \
                                         0; \
                                         0; \
-                                        0; \
-                                        if(x<22e3,1,0); \
-                                        if(x>=20e3&x<34e3,1,0); \
+                                        if(x<23e3,1,0); \
+                                        if(x>=20e3&x<35e3,1,0); \
                                         if(x>=32e3&x<120e3,1,0); \
-                                        if(x>=100e3&x<130e3,1,0); \
-                                        if(x>=130e3&x<200e3,1,0); \
+                                        0; \
+                                        if(x>=120e3&x<200e3,1,0); \
                                         0; \
                                         0; \
                                         0; \

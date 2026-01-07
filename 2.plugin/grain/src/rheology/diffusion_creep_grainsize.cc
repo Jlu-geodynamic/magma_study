@@ -19,8 +19,8 @@
 */
 
 //新增错位蠕变
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/rheology/dislocation_creep_grainsize.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/rheology/diffusion_creep_grainsize.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/rheology/dislocation_creep_grainsize.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/rheology/diffusion_creep_grainsize.h>
 
 #include <aspect/material_model/utilities.h>
 #include <aspect/utilities.h>
@@ -144,8 +144,11 @@ namespace aspect
 		  //2 不开启粒度计算，或处于初始化阶段时
           if (flag[composition] == 0 || !this->simulator_is_past_initialization() || this->get_timestep_number() == 0) 
 		  {
+			  //20251226 地幔相初始粒度根据输入值确定
+			  //未来考虑用输入参数控制初始粒度设置形式。
+			  return initial_grain_size[composition];
 			  
-			  //2.1 非岩石圈地幔区域返回初始值
+			  /* //2.1 非岩石圈地幔区域返回初始值
 			  if (composition != this->introspection().compositional_index_for_name("mantle_upper") + 1 && composition != this->introspection().compositional_index_for_name("mantle_middle") + 1 && this->introspection().compositional_index_for_name("mantle_lower") + 1)
 				  return initial_grain_size[composition];
 			  
@@ -181,7 +184,7 @@ namespace aspect
 				  else
 					  return pow(10, lg_grainL_init);
 		    	  
-		      }
+		      } */
 		  }
 		  
 		  //3 熔融程度非0时不启用粒度计算

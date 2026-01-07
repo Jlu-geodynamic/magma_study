@@ -66,7 +66,8 @@ namespace aspect
         virtual
         double temperature (const double depth,
 		                    const bool in_cratontic,
-                            const std::vector<double> thicknesses) const;
+                            const std::vector<double> thicknesses,
+							const std::vector<double> thicknesses_for_init) const;
 
         /**
          * Declare the parameters this class takes through input files.
@@ -152,6 +153,9 @@ namespace aspect
 		std::vector<double> cratontic_layer_thicknesses;
 		bool center_cratontic;
 		bool exclude_mantle_lower;
+		//20251219
+		bool add_craton_slope;
+		double slope_angle;
     };
   }
 }

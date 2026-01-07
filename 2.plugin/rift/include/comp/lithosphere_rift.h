@@ -162,6 +162,9 @@ namespace aspect
 		//20241227
 		bool init_density_change_by_melt;
 		double init_max_melt;
+		//20251219
+		bool add_craton_slope;
+		double slope_angle;
 
     };
   }

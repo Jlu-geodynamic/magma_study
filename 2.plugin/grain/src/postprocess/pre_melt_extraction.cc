@@ -19,7 +19,7 @@
 */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/postprocess/pre_melt_extraction.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/postprocess/pre_melt_extraction.h>
 
 #include <aspect/geometry_model/interface.h>
 #include <aspect/geometry_model/box.h>
@@ -245,11 +245,12 @@ namespace aspect
 									sd1_values);
 				const double sd1_mid = sd1_values[mid_point];
 				
-				const unsigned int sd2_id = this->introspection().compositional_index_for_name("sediment_2");
+				//20251231 停用sediment_2
+				/* const unsigned int sd2_id = this->introspection().compositional_index_for_name("sediment_2");
 				std::vector<double> sd2_values(n_q_points);
 				fe_values[this->introspection().extractors.compositional_fields[sd2_id]].get_function_values (this->get_solution(),
 									sd2_values); 
-			    const double sd2_mid = sd1_values[mid_point];
+			    const double sd2_mid = sd2_values[mid_point]; */
 				
 				const unsigned int upper_id = this->introspection().compositional_index_for_name("upper");
 				std::vector<double> upper_values(n_q_points);
@@ -294,7 +295,9 @@ namespace aspect
 				const double target_crustal_melting_mid = target_crustal_melting_values[mid_point];
 				
 				crust_fraction = upper_mid + lower_mid;
-				mantle_fraction = 1. - sd1_mid - sd2_mid - upper_mid - lower_mid - mantle_upper_mid - target_mantle_melting_mid - target_crustal_melting_mid;
+				//20251231 停用sediment_2
+				//mantle_fraction = 1. - sd1_mid - sd2_mid - upper_mid - lower_mid - mantle_upper_mid - target_mantle_melting_mid - target_crustal_melting_mid;
+				mantle_fraction = 1. - sd1_mid - upper_mid - lower_mid - mantle_upper_mid - target_mantle_melting_mid - target_crustal_melting_mid;
 			}
 
 			unsigned int melt_record_id = this->introspection().compositional_index_for_name("melt_record");

@@ -19,12 +19,12 @@
  */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/comp/rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/comp/rift.h>
 #include <aspect/postprocess/interface.h>
 #include <aspect/geometry_model/box.h>
 #include <aspect/geometry_model/chunk.h>
 #include <aspect/geometry_model/ellipsoidal_chunk.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/visco_plastic_grainsize.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/visco_plastic_grainsize.h>
 #include <aspect/utilities.h>
 
 namespace aspect

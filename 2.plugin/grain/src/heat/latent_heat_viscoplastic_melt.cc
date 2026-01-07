@@ -19,7 +19,7 @@
 */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/heat/latent_heat_viscoplastic_melt.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/heat/latent_heat_viscoplastic_melt.h>
 #include <aspect/material_model/interface.h>
 
 
@@ -57,7 +57,8 @@ namespace aspect
 										  : 0.;
 			  const double mantle_fraction = include_mantle_melting ? 
 			                               1. - material_model_inputs.composition[q][this->introspection().compositional_index_for_name("sediment_1")]
-			                               - material_model_inputs.composition[q][this->introspection().compositional_index_for_name("sediment_2")]
+										   //20251231 停用sediment_2
+			                               //- material_model_inputs.composition[q][this->introspection().compositional_index_for_name("sediment_2")]
 										   - material_model_inputs.composition[q][this->introspection().compositional_index_for_name("upper")]
 										   - material_model_inputs.composition[q][this->introspection().compositional_index_for_name("lower")]
 										   - material_model_inputs.composition[q][this->introspection().compositional_index_for_name("mantle_upper")]

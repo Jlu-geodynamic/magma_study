@@ -23,7 +23,7 @@
 #define _aspect_heating_model_latent_heat_viscoplastic_melt_h
 
 #include <aspect/heating_model/interface.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/grain/include/visco_plastic_grainsize.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/grain/include/visco_plastic_grainsize.h>
 #include <aspect/simulator_access.h>
 
 namespace aspect

@@ -19,9 +19,9 @@
 */
 
 
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/comp/lithosphere_rift.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/temp/lithosphere_rift.h>
-#include </fs2/home/liuzhonglan/wy/lib_extra/melt20241204/rift/include/geom/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/comp/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/temp/lithosphere_rift.h>
+#include </fs2/home/liuzhonglan/wy/lib_extra/melt20251231/rift/include/geom/lithosphere_rift.h>
 #include <aspect/geometry_model/box.h>
 #include <aspect/utilities.h>
 
@@ -77,15 +77,68 @@ namespace aspect
 	  double local_mantle_lower_thickness = 0;
 	  //20240704
 	  //新增选项：边界内为克拉通，或边界外为克拉通
-	  const bool center_is_cratontic = add_cratontic && center_cratontic && surface_point[0] >= cratontic_boundary[0] && surface_point[0] < cratontic_boundary[1];
-	  const bool side_is_cratontic = add_cratontic && !center_cratontic &&(surface_point[0] < cratontic_boundary[0] || surface_point[0] >= cratontic_boundary[1]);
+	  const bool center_is_cratontic = add_cratontic && center_cratontic && surface_point[0] > cratontic_boundary[0] && surface_point[0] < cratontic_boundary[1];
+	  const bool side_is_cratontic = add_cratontic && !center_cratontic &&(surface_point[0] < cratontic_boundary[0] || surface_point[0] > cratontic_boundary[1]);
+	  //20251219 设置倾斜结构
+      //默认克拉通更厚
+	  //倾斜区域深度
+	  const double total_normal_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(),0);
+	  const double total_cratontic_thickness = std::accumulate(cratontic_layer_thicknesses.begin(), cratontic_layer_thicknesses.end(),0);
+	  const double max_slope_length = total_cratontic_thickness - total_normal_thickness;
+	  //倾斜区域宽度
+	  const double max_slope_width = max_slope_length / std::tan(slope_angle * numbers::PI / 180.0);
+	  //当前位置高出普通岩石圈深度
+	  //用depth_slope值判定是否处于斜坡，或是否启用斜坡
+	  double depth_slope = 0;
+	  if (add_craton_slope && center_is_cratontic && (surface_point[0] <= cratontic_boundary[0] + max_slope_width || surface_point[0] >= cratontic_boundary[1] - max_slope_width))
+	  {
+		  //进入判定后需让depth_slope非0
+		  depth_slope = surface_point[0] <= cratontic_boundary[0] + max_slope_width 
+		                ? std::max(1e-5, max_slope_length * (surface_point[0] - cratontic_boundary[0]) / max_slope_width)
+                        : std::max(1e-5, max_slope_length * (cratontic_boundary[1] - surface_point[0]) / max_slope_width);
+	  }
+	  else if (add_craton_slope && side_is_cratontic && ((surface_point[0] >= cratontic_boundary[0] - max_slope_width && surface_point[0] < cratontic_boundary[0]) || (surface_point[0] > cratontic_boundary[1] && surface_point[0] <= cratontic_boundary[1] + max_slope_width)))
+	  {
+		  //进入判定后需让depth_slope非0
+		  depth_slope = surface_point[0] >= cratontic_boundary[0] - max_slope_width && surface_point[0] < cratontic_boundary[0]
+		                ? std::max(1e-5, max_slope_length * (cratontic_boundary[0] - surface_point[0]) / max_slope_width)
+						: std::max(1e-5, max_slope_length * (surface_point[0] - cratontic_boundary[1]) / max_slope_width);
+	  }
+	  else
+		  depth_slope = 0;
+	  //斜坡计算完成，统计当前区域各相态厚度
 	  if (center_is_cratontic || side_is_cratontic)
 	  {
 		  local_upper_crust_thickness = cratontic_layer_thicknesses[0];
 		  local_lower_crust_thickness = cratontic_layer_thicknesses[1];
-		  local_mantle_upper_thickness = cratontic_layer_thicknesses[2];
-		  local_mantle_middle_thickness = cratontic_layer_thicknesses[3];
-		  local_mantle_lower_thickness = cratontic_layer_thicknesses[4];
+		  //位于斜坡区域
+		  const double craton_slope = total_normal_thickness + depth_slope;
+		  const double craton_upper = cratontic_layer_thicknesses[0] + cratontic_layer_thicknesses[1] + cratontic_layer_thicknesses[2];
+		  const double craton_middle = cratontic_layer_thicknesses[0] + cratontic_layer_thicknesses[1] + cratontic_layer_thicknesses[2] + cratontic_layer_thicknesses[3];
+		  if (depth_slope > 0 && craton_slope < craton_upper)
+		  {
+			  local_mantle_upper_thickness = craton_slope - cratontic_layer_thicknesses[0] - cratontic_layer_thicknesses[1];
+			  local_mantle_middle_thickness = 0.;
+			  local_mantle_lower_thickness = 0.;
+		  }
+		  else if (depth_slope > 0 && craton_slope >= craton_upper && craton_slope < craton_middle)
+		  {
+			  local_mantle_upper_thickness = cratontic_layer_thicknesses[2];
+			  local_mantle_middle_thickness = craton_slope - craton_upper;
+			  local_mantle_lower_thickness = 0.;
+		  }
+		  else if (depth_slope > 0 && craton_slope >= craton_middle && craton_slope < total_cratontic_thickness)
+		  {
+			  local_mantle_upper_thickness = cratontic_layer_thicknesses[2];
+		      local_mantle_middle_thickness = cratontic_layer_thicknesses[3];
+		      local_mantle_lower_thickness = craton_slope - craton_middle;
+		  }
+		  else
+		  {
+			  local_mantle_upper_thickness = cratontic_layer_thicknesses[2];
+		      local_mantle_middle_thickness = cratontic_layer_thicknesses[3];
+		      local_mantle_lower_thickness = cratontic_layer_thicknesses[4];
+		  }
 	  }
 	  else
 	  {
@@ -111,8 +164,7 @@ namespace aspect
                                                             *  (!blend_rift_and_polygon && distance_to_L_polygon.first > 0.-2.*sigma_polygon ? 1. : (1.0 - A[4] * std::exp((-std::pow(distance_to_rift_axis,2)/(2.0*std::pow(sigma_rift,2))))));
 	  }
 	  
-	  
-      														
+	  								
 	  const double upper_crust = local_upper_crust_thickness;
 	  const double lower_crust = local_upper_crust_thickness + local_lower_crust_thickness;
 	  const double mantle_upper = local_upper_crust_thickness + local_lower_crust_thickness + local_mantle_upper_thickness;
@@ -146,7 +198,15 @@ namespace aspect
 	  //设置粒度初始值时认定莫霍面为平面，如有地壳增厚的位置，岩石圈地幔的粒度按照距离初始莫霍面的位置设定。
 	  //20240701
 	  //计算岩石圈地幔粒度时，将所有岩石圈地幔放在一起
-      else if (!exclude_mantle_lower && compositional_index == id_grainsize && depth > lower_crust && depth <= mantle_lower)
+	  //20251226 地幔相初始粒度均按输入值设置，未来考虑用输入参数控制初始粒度设置形式。
+	  else if (compositional_index == id_grainsize && depth > lower_crust && depth <= mantle_upper)
+		  return init_grain_size[id_mantle_upper + 1];
+	  else if (compositional_index == id_grainsize && depth > mantle_upper && depth <= mantle_middle)
+		  return init_grain_size[id_mantle_middle + 1];
+	  else if (compositional_index == id_grainsize && depth > mantle_middle && depth <= mantle_lower)
+		  return init_grain_size[id_mantle_lower + 1];
+
+       /*else if (!exclude_mantle_lower && compositional_index == id_grainsize && depth > lower_crust && depth <= mantle_lower)
 	  {
 		  const double lg_grainL_prm = log10(init_grain_size[id_mantle_upper + 1]);
 	      const double lg_grainA_prm = log10(init_grain_size[0]);
@@ -185,7 +245,8 @@ namespace aspect
 		  return pow(10, lg_grainL_init_ex);
 	  }
 	  else if (exclude_mantle_lower && compositional_index == id_grainsize && depth > mantle_middle && depth <= mantle_lower)
-		  return init_grain_size[id_mantle_lower + 1];
+		  return init_grain_size[id_mantle_lower + 1]; */
+	  
 	  //background 
 	  else if (compositional_index == id_grainsize && depth > mantle_lower)
 		  return init_grain_size[0];
@@ -413,7 +474,19 @@ namespace aspect
                              Patterns::Double (0),
                              "Max melt fraction in initial density modification." 
 							 "The initial max melt fraction will be changed linear via depth in the 'mantle_lower' phase. "
-                             "Units: /.");					 
+                             "Units: /.");
+          //20251219
+          //新增：克拉通斜坡相关设置
+		  prm.declare_entry ("Add slope at the bottom of craton", "false",
+                             Patterns::Bool (),
+                             "Add slope at the bottom of craton." 
+							 "Note that this function is only available in 2D models."
+                             "Units: /.");
+		  prm.declare_entry ("Slope angle at the bottom of craton", "45.",
+                             Patterns::Double (0),
+                             "Slope angle at the bottom of craton." 
+							 "Note that this function is only available in 2D models."
+                             "Units: /.");
 
         }
         prm.leave_subsection();
@@ -552,6 +625,10 @@ namespace aspect
 			  //使用最大熔融程度对密度进行修正
 			  init_density_change_by_melt = prm.get_bool ("Use 'melt_max' to modify the initial density of 'mantle_lower'");
 			  init_max_melt = prm.get_double ("Max melt fraction in initial density modification");
+			  //20251219
+			  //克拉通底部斜坡设置
+			  add_craton_slope = prm.get_bool ("Add slope at the bottom of craton");
+			  slope_angle = prm.get_double ("Slope angle at the bottom of craton");
 			  
 			  
 

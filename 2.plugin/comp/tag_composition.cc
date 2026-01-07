@@ -90,8 +90,9 @@ namespace aspect
                         //Crust will have smallest res, so not interested in other fields
                         break;
                       }
-                    if (prelim_composition_values[sed2_refinement[0]][p] > 0.2)
-                        sed2_present = true;
+					  //20251231 停用sediment_2
+                    //if (prelim_composition_values[sed2_refinement[0]][p] > 0.2)
+                        //sed2_present = true;
                     if (prelim_composition_values[uc_refinement[0]][p] > 0.2)
                         uc_present = true;
                     if (prelim_composition_values[lc_refinement[0]][p] > 0.2)
@@ -280,10 +281,12 @@ namespace aspect
             = Utilities::string_to_int(
                 Utilities::split_string_list(prm.get("Sediment 2 refinement")));
 
-          sed2_refinement = std::vector<unsigned int> (sed2.begin(),
+          //20251231 停用sediment_2
+		  sed2_refinement = std::vector<unsigned int> (sed1.begin(),sed1.end());
+          /* sed2_refinement = std::vector<unsigned int> (sed2.begin(),
                                                               sed2.end());
-
-          AssertThrow (sed2_refinement.size() == 3,
+          
+           AssertThrow (sed2_refinement.size() == 3,
                        ExcMessage ("The number of refinement data given here must be "
                                    "equal to 3 (field number + min level + max level). "));
 
@@ -297,7 +300,7 @@ namespace aspect
 
           AssertThrow (sed2_refinement[2] <= max_level,
                        ExcMessage ("The maximum refinement for the slab mantle cannot be "
-                                   "greater than the maximum level of the whole model. "));
+                                   "greater than the maximum level of the whole model. ")); */ 
         
 
           const std::vector<int> uc

@@ -161,6 +161,8 @@ namespace aspect
 		std::vector<double> temp_heat_capacities;
 		std::vector<double> temp_heat_productivities;
 		double Tp;
+		//20251205
+		bool exclude_mantle_lower;
 
     };
   }
